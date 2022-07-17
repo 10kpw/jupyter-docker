@@ -1,0 +1,30 @@
+version:  '3'
+
+networks:
+  db-net:
+    external: true
+  base_net:
+    external: true
+
+services:
+  datascience-notebook:
+      image: jupyter/datascience-notebook
+      volumes:
+        - ${LOCAL_WORKING_DIR}:/home/jovyan/work
+        - ${LOCAL_DATASETS}:/home/jovyan/work/datasets
+        - ${LOCAL_MODULES}:/home/jovyan/work/modules
+        - ${LOCAL_SSL_CERTS}:/etc/ssl/notebook
+      ports:
+        - ${PORT}:8888
+      container_name:   jupyter_notebook
+      command: "start-notebook.sh \
+        --NotebookApp.password=${ACCESS_TOKEN} \
+        --NotebookApp.certfile=/etc/ssl/notebook/jupyter.pem"
+      labels:
+        - traefik.enable=true
+        - traefik.docker.network=base_net
+        - traefik.tags=public
+        - traefik.http.services.jupyter.loadbalancer.server.port=10000
+        - traefik.http.routers.jupyter.rule=Host(`jupyter.10kpw.com`) #&& PathPrefix(`/v1`)
+        - traefik.http.routers.jupyter.entrypoints=web-secured
+        - traefik.http.routers.jupyter.tls.certresolver=myresolver
